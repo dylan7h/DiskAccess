@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "DiskAccess",
+            "includePath": [
+                "${workspaceFolder}/App/**",
+                "${workspaceFolder}/Lib/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.18362.0",
+            "compilerPath": "C:/msys64/mingw32/bin/clang++.exe",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "intelliSenseMode": "gcc-x86",
+            "configurationProvider": "go2sh.cmake-integration"
+        }
+    ],
+    "version": 4
+}

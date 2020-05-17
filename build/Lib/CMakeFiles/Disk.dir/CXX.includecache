@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../Lib/Inc/Disk.h
+
+C:/Workspace/DiskAccess-VSCode/Lib/Src/Disk.cpp
+windows.h
+-
+winioctl.h
+-
+iostream
+-
+string
+-
+Disk.h
+C:/Workspace/DiskAccess-VSCode/Lib/Src/Disk.h
+

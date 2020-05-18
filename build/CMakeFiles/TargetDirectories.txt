@@ -1,8 +1,0 @@
-C:/Workspace/DiskAccess-VSCode/build/CMakeFiles/edit_cache.dir
-C:/Workspace/DiskAccess-VSCode/build/CMakeFiles/rebuild_cache.dir
-C:/Workspace/DiskAccess-VSCode/build/Lib/CMakeFiles/Disk.dir
-C:/Workspace/DiskAccess-VSCode/build/Lib/CMakeFiles/edit_cache.dir
-C:/Workspace/DiskAccess-VSCode/build/Lib/CMakeFiles/rebuild_cache.dir
-C:/Workspace/DiskAccess-VSCode/build/App/CMakeFiles/DiskAccess.dir
-C:/Workspace/DiskAccess-VSCode/build/App/CMakeFiles/edit_cache.dir
-C:/Workspace/DiskAccess-VSCode/build/App/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Workspace/GitHub/DiskAccess/App/Src/main.cpp
+iostream
+-
+string
+-
+windows.h
+-
+winioctl.h
+-
+tchar.h
+-
+

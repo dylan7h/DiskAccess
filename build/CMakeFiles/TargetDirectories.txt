@@ -1,0 +1,8 @@
+C:/Workspace/GitHub/DiskAccess/build/CMakeFiles/edit_cache.dir
+C:/Workspace/GitHub/DiskAccess/build/CMakeFiles/rebuild_cache.dir
+C:/Workspace/GitHub/DiskAccess/build/Lib/CMakeFiles/RawStorage.dir
+C:/Workspace/GitHub/DiskAccess/build/Lib/CMakeFiles/edit_cache.dir
+C:/Workspace/GitHub/DiskAccess/build/Lib/CMakeFiles/rebuild_cache.dir
+C:/Workspace/GitHub/DiskAccess/build/App/CMakeFiles/DiskAccess.dir
+C:/Workspace/GitHub/DiskAccess/build/App/CMakeFiles/edit_cache.dir
+C:/Workspace/GitHub/DiskAccess/build/App/CMakeFiles/rebuild_cache.dir

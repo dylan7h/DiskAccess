@@ -1,0 +1,12 @@
+[
+{
+  "directory": "C:/Workspace/GitHub/DiskAccess/build/Lib",
+  "command": "C:/msys64/mingw32/bin/clang++.exe  -DDEBUG -D_DEBUG @CMakeFiles/RawStorage.dir/includes_CXX.rsp -g   -g -O0 -o CMakeFiles/RawStorage.dir/Src/RawStorage.cpp.obj -c C:/Workspace/GitHub/DiskAccess/Lib/Src/RawStorage.cpp",
+  "file": "C:/Workspace/GitHub/DiskAccess/Lib/Src/RawStorage.cpp"
+},
+{
+  "directory": "C:/Workspace/GitHub/DiskAccess/build/App",
+  "command": "C:/msys64/mingw32/bin/clang++.exe  -DDEBUG -D_DEBUG @CMakeFiles/DiskAccess.dir/includes_CXX.rsp -g   -g -O0 -o CMakeFiles/DiskAccess.dir/Src/main.cpp.obj -c C:/Workspace/GitHub/DiskAccess/App/Src/main.cpp",
+  "file": "C:/Workspace/GitHub/DiskAccess/App/Src/main.cpp"
+}
+]

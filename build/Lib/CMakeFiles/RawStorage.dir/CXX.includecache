@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../Lib/Inc/RawStorage.h
+
+C:/Workspace/GitHub/DiskAccess/Lib/Src/RawStorage.cpp
+windows.h
+-
+winioctl.h
+-
+tchar.h
+-
+RawStorage.h
+C:/Workspace/GitHub/DiskAccess/Lib/Src/RawStorage.h
+

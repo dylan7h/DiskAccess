@@ -6,69 +6,89 @@ using namespace std;
 #include <winioctl.h>
 #include <tchar.h>
 
+#include "RawStorage.h"
+
+void ProgressProc(ULONG TotalSector, ULONG RemainSector, LPVOID lpParam) {
+    char back[4] = { 0x08, 0x08, 0x08, 0x08 };
+    fwrite(back, 1, 4, stdout);
+    printf("%3d%%", ((TotalSector - RemainSector) * 100) / TotalSector);
+}
+
 int main(int argc, char* argv[]) {
-    HANDLE hDevice = CreateFile(_T("\\\\.\\PhysicalDrive1"), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-    if(hDevice == INVALID_HANDLE_VALUE) {
-        cout << "INVALID_HANDLE_VALUE" << endl;
-        return 0;
+    TCHAR Logical = TEXT('D');
+
+    CRawStorage     RawStorage(Logical);
+    StorageInfo_t   StorageInfo;
+
+    RawStorage.Get_Storage_Info(&StorageInfo);
+
+    printf("%-25s: %u\n",  "BusType",               StorageInfo.BusType);
+    printf("%-25s: %lu\n", "BytePerSector",         StorageInfo.BytePerSector);
+    printf("%-25s: %s\n",  "CommandQueueing",       StorageInfo.CommandQueueing ? "Yes" : "No");
+    printf("%-25s: %u\n",  "DeviceType",            StorageInfo.DeviceType);
+    printf("%-25s: %u\n",  "DeviceTypeModifier",    StorageInfo.DeviceTypeModifier);
+    printf("%-25s: %lu\n", "MaximumPhysicalPages",  StorageInfo.MaximumPhysicalPages);
+    printf("%-25s: %lu\n", "MaximumTransferLength", StorageInfo.MaximumTransferLength);
+    printf("%-25s: %u\n",  "PartitionStyle",        StorageInfo.PartitionStyle);
+    printf("%-25s: %s\n",  "ProductID",             StorageInfo.ProductID.c_str());
+    printf("%-25s: %s\n",  "ProductRevision",       StorageInfo.ProductRevision.c_str());
+    printf("%-25s: %s\n",  "RemovableMedia",        StorageInfo.RemovableMedia ? "Yes" : "No");
+    printf("%-25s: %s\n",  "SerialNumber",          StorageInfo.SerialNumber.c_str());
+    printf("%-25s: %u\n",  "StorageNumber",         StorageInfo.StorageNumber);
+    printf("%-25s: %s\n\n",  "VendorID",              StorageInfo.VendorID.c_str());
+
+    TCHAR File[] = _T("C:\\shobjidl.h");
+    LARGE_INTEGER FileSize;
+    HANDLE hFile = CreateFile(File, FILE_READ_ACCESS, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if(hFile == INVALID_HANDLE_VALUE) {
+        cout << "File Open Fail..." << endl;
     }
 
-    STORAGE_PROPERTY_QUERY storagePropertyQuery;
-    storagePropertyQuery.PropertyId = StorageDeviceProperty;
-    storagePropertyQuery.QueryType = PropertyStandardQuery;
+    GetFileSizeEx(hFile, &FileSize);
 
-    PSTORAGE_DEVICE_DESCRIPTOR pStorageDeviceDescriptor = (PSTORAGE_DEVICE_DESCRIPTOR)new BYTE[sizeof(STORAGE_DEVICE_DESCRIPTOR) + 0xFFF];
+    cout << "File Size: " << FileSize.QuadPart << endl;
+    LPBYTE pwBuff = new BYTE[FileSize.QuadPart];
+    LPBYTE prBuff = new BYTE[FileSize.QuadPart];
     DWORD Junk;
+    DWORD SectorCount;
+    BOOL bResult;
+    bool bReturn;
 
-    DeviceIoControl(
-        _In_        (HANDLE)       hDevice,                            // handle to a partition
-        _In_        (DWORD) IOCTL_STORAGE_QUERY_PROPERTY,              // dwIoControlCode
-        _In_        (LPVOID)       &storagePropertyQuery,              // input buffer - STORAGE_PROPERTY_QUERY structure
-        _In_        (DWORD)        sizeof(STORAGE_PROPERTY_QUERY),     // size of input buffer
-        _Out_opt_   (LPVOID)       pStorageDeviceDescriptor,           // output buffer - see Remarks
-        _In_        (DWORD)        sizeof(STORAGE_DEVICE_DESCRIPTOR) + 0xFFF,  // size of output buffer
-        _Out_opt_   (LPDWORD)      &Junk,                              // number of bytes returned
-        _Inout_opt_ (LPOVERLAPPED) NULL                                // OVERLAPPED structure
-    );
+    SectorCount = (FileSize.QuadPart % 512 != 0) ? ((FileSize.QuadPart / 512) + 1) : FileSize.QuadPart / 512;
+    bResult = ReadFile(hFile, pwBuff, SectorCount, &Junk, NULL);
+    if(bResult != TRUE) {
+        cout << "File Read Fail..." << endl;
+    }
+    
+    CloseHandle(hFile);
 
-    printf("%-25s: %lu\n", "Version",               pStorageDeviceDescriptor->Version);
-    printf("%-25s: %lu\n", "Size",                  pStorageDeviceDescriptor->Size);
-    printf("%-25s: %u\n", "DeviceType",             pStorageDeviceDescriptor->DeviceType);
-    printf("%-25s: %u\n", "DeviceTypeModifier",     pStorageDeviceDescriptor->DeviceTypeModifier);
-    printf("%-25s: %s\n", "RemovableMedia",         pStorageDeviceDescriptor->RemovableMedia ? "TRUE" : "FALSE");
-    printf("%-25s: %s\n", "CommandQueueing",        pStorageDeviceDescriptor->CommandQueueing ? "TRUE" : "FALSE");
-    printf("%-25s: %lu\n", "VendorIdOffset",        pStorageDeviceDescriptor->VendorIdOffset);
-    printf("%-25s: %lu\n", "ProductIdOffset",       pStorageDeviceDescriptor->ProductIdOffset);
-    printf("%-25s: %lu\n", "ProductRevisionOffset", pStorageDeviceDescriptor->ProductRevisionOffset);
-    printf("%-25s: %lu\n", "SerialNumberOffset",    pStorageDeviceDescriptor->SerialNumberOffset);
-    printf("%-25s: %u\n\n", "BusType",               pStorageDeviceDescriptor->BusType);
+    cout << "[Write]" << endl;
+    bReturn = RawStorage.Write(0, pwBuff, SectorCount, ProgressProc);
+    if(bReturn != true) {
+        cout << "Write Fail" << endl;
+    }
+    cout << "\nDone\n" << endl;
 
-    ZeroMemory(&storagePropertyQuery, sizeof(STORAGE_PROPERTY_QUERY));
-    storagePropertyQuery.PropertyId = StorageAdapterProperty;
-    storagePropertyQuery.QueryType = PropertyStandardQuery;
+    cout << "[Read]" << endl;
+    bReturn = RawStorage.Read(0, prBuff, SectorCount, ProgressProc);
+    if(bReturn != true) {
+        cout << "Read Fail" << endl;
+    }
+    cout << "\nDone\n" << endl;
 
-    STORAGE_ADAPTER_DESCRIPTOR descriptor;
+    pwBuff[4000] = '1';
 
-    DeviceIoControl(
-        _In_        (HANDLE)       hDevice,                            // handle to a partition
-        _In_        (DWORD) IOCTL_STORAGE_QUERY_PROPERTY,              // dwIoControlCode
-        _In_        (LPVOID)       &storagePropertyQuery,              // input buffer - STORAGE_PROPERTY_QUERY structure
-        _In_        (DWORD)        sizeof(STORAGE_PROPERTY_QUERY),     // size of input buffer
-        _Out_opt_   (LPVOID)       &descriptor,           // output buffer - see Remarks
-        _In_        (DWORD)        sizeof(STORAGE_ADAPTER_DESCRIPTOR),  // size of output buffer
-        _Out_opt_   (LPDWORD)      &Junk,                              // number of bytes returned
-        _Inout_opt_ (LPOVERLAPPED) NULL                                // OVERLAPPED structure
-    );
+    cout << "[Verify]" << endl;
+    bReturn = RawStorage.Verify(prBuff, pwBuff, SectorCount, ProgressProc);
+    if(bReturn != true) {
+        cout << "Verify Fail" << endl;
+    }
+    cout << "\nDone\n" << endl;
 
-    printf("%-30s: %lu\n", "MaximumTransferLength",               descriptor.MaximumTransferLength);
-    printf("%-30s: %lu\n", "MaximumPhysicalPages",               descriptor.MaximumPhysicalPages);
-    printf("%-30s: %lu\n", "AlignmentMask",               descriptor.AlignmentMask);
-    printf("%-30s: %s\n", "AdapterUsesPio",               descriptor.AdapterUsesPio ? "TRUE" : "FALSE");
-    printf("%-30s: %s\n", "AdapterScansDown",               descriptor.AdapterScansDown ? "TRUE" : "FALSE");
-    printf("%-30s: %s\n", "CommandQueueing",               descriptor.CommandQueueing ? "TRUE" : "FALSE");
-    printf("%-30s: %s\n", "AcceleratedTransfer",               descriptor.AcceleratedTransfer ? "TRUE" : "FALSE");
-
-    CloseHandle(hDevice);
+    delete[] pwBuff;
+    delete[] prBuff;
+    pwBuff = nullptr;
+    prBuff = nullptr;
 
     return 0;
 }

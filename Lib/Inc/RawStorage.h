@@ -47,23 +47,27 @@ public:
     ~CRawStorage();
 
 private:
-    bool Get_VolumeNumber();
-    bool Get_Geometry();
-    bool Get_Descriptor();
-    bool Get_Adapter_Descriptor();
-    bool Get_Partition_Info();      
+    bool Get_VolumeNumber(void);
+    bool Get_Geometry(void);
+    bool Get_Descriptor(void);
+    bool Get_Adapter_Descriptor(void);
+    bool Get_Partition_Info(void);      
 
 public:
+    DWORD Get_BytePerSector(void) const;
+    DWORD Get_StorageSize(void) const;
     bool Get_Storage_Info(LPStorageInfo_t pStorageInfo = nullptr);
 
 public:
     bool Open(eStorageIO_Mode m_IO_Mode);
+    void Close();
 
 private:
 
 public:
     bool Write(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, ProgressCallback Proc = nullptr, LPVOID lpParam = nullptr);
     bool Read(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, ProgressCallback Proc = nullptr, LPVOID lpParam = nullptr);
+    bool Clean(DWORD SectorBase, DWORD cbSector, ProgressCallback Proc = nullptr, LPVOID lpParam = nullptr);
     DWORD Verify(LPBYTE pDest, LPBYTE pSrc, DWORD cbSector, ProgressCallback Proc = nullptr, LPVOID lpParam = nullptr);
 };
 

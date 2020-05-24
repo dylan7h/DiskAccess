@@ -1,3 +1,4 @@
+#if 1
 #include <iostream>
 #include <string>
 using namespace std;
@@ -76,7 +77,7 @@ int main(int argc, char* argv[]) {
     }
     cout << "\nDone\n" << endl;
 
-    pwBuff[4000] = '1';
+    // pwBuff[4000] = '1';
 
     cout << "[Verify]" << endl;
     bReturn = RawStorage.Verify(prBuff, pwBuff, SectorCount, ProgressProc);
@@ -92,3 +93,7 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
+#else 
+
+#endif

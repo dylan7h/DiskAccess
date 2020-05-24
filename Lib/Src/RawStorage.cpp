@@ -2,6 +2,7 @@
 #include <winioctl.h>
 #include <tchar.h>
 
+#include <iostream>
 #include <string>
 #include "RawStorage.h"
 
@@ -265,6 +266,14 @@ CLEAN_UP:
     return bReturn;
 }   
 
+DWORD CRawStorage::Get_BytePerSector(void) const {
+    return m_StorageInfo.BytePerSector;
+}
+
+DWORD CRawStorage::Get_StorageSize(void) const {
+    return m_StorageInfo.StorageSize;
+}
+
 bool CRawStorage::Get_Storage_Info(LPStorageInfo_t pStorageInfo) {
     bool bResult;
     if(m_bInfoInit != true) {
@@ -361,6 +370,11 @@ bool CRawStorage::Open(eStorageIO_Mode m_IO_Mode) {
     return true;
 }
 
+void CRawStorage::Close() {
+    SAFE_CLOSE(m_hStorage);
+}
+
+
 bool CRawStorage::Write(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, ProgressCallback Proc, LPVOID lpParam) {
     BOOL bResult;
     bool bReturn;
@@ -368,6 +382,8 @@ bool CRawStorage::Write(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, Progress
     DWORD TransferUnit;
     DWORD RemainSector;
     LPBYTE lpPos;
+    LARGE_INTEGER Distance;
+    LARGE_INTEGER NewDistance;
 
     bReturn = this->Open(eStorageIO_Mode::WRITE);
     if(bReturn != true) {
@@ -384,6 +400,13 @@ bool CRawStorage::Write(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, Progress
     /* Unmount Volume */
     bResult = DeviceIoControl(this->m_hStorage, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
     if(bResult  == 0) {
+        bReturn = false;
+        goto CLENA_UP;
+    }
+
+    Distance.QuadPart = (LONGLONG)SectorBase * Get_BytePerSector();
+    SetFilePointerEx(this->m_hStorage, Distance, &NewDistance, FILE_BEGIN);
+    if(Distance.QuadPart != NewDistance.QuadPart) {
         bReturn = false;
         goto CLENA_UP;
     }
@@ -406,16 +429,11 @@ bool CRawStorage::Write(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, Progress
         }
     } while(RemainSector != 0);
 
-    /* Unlock On Volume */
-    bResult = DeviceIoControl(this->m_hStorage, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
-    if(bResult  == 0) {
-        bReturn = false;
-        goto CLENA_UP;
-    }
-
     bReturn = true;
 
 CLENA_UP:
+    /* Unlock On Volume */
+    DeviceIoControl(this->m_hStorage, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
     SAFE_CLOSE(m_hStorage);
 
     return bReturn;
@@ -428,6 +446,8 @@ bool CRawStorage::Read(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, ProgressC
     DWORD TransferUnit;
     DWORD RemainSector;
     LPBYTE lpPos;
+    LARGE_INTEGER Distance;
+    LARGE_INTEGER NewDistance;
 
     bReturn = this->Open(eStorageIO_Mode::READ);
     if(bReturn != true) {
@@ -444,6 +464,13 @@ bool CRawStorage::Read(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, ProgressC
     /* Unmount Volume */
     bResult = DeviceIoControl(this->m_hStorage, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
     if(bResult  == 0) {
+        bReturn = false;
+        goto CLENA_UP;
+    }
+
+    Distance.QuadPart = (LONGLONG)SectorBase * Get_BytePerSector();
+    SetFilePointerEx(this->m_hStorage, Distance, &NewDistance, FILE_BEGIN);
+    if(Distance.QuadPart != NewDistance.QuadPart) {
         bReturn = false;
         goto CLENA_UP;
     }
@@ -466,20 +493,86 @@ bool CRawStorage::Read(DWORD SectorBase, LPBYTE pBuff, DWORD cbSector, ProgressC
         }
     } while(RemainSector != 0);
 
+    bReturn = true;
+
+CLENA_UP:
     /* Unlock On Volume */
-    bResult = DeviceIoControl(this->m_hStorage, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
+    DeviceIoControl(this->m_hStorage, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
+    SAFE_CLOSE(m_hStorage)
+
+    return bReturn;
+}
+
+bool CRawStorage::Clean(DWORD SectorBase, DWORD cbSector, ProgressCallback Proc = nullptr, LPVOID lpParam = nullptr) {
+    BOOL bResult;
+    bool bReturn;
+    DWORD Junk;
+    DWORD TransferUnit;
+    DWORD RemainSector;
+    LPBYTE pBuff = nullptr;
+    LPBYTE lpPos;
+    LARGE_INTEGER Distance;
+    LARGE_INTEGER NewDistance;
+
+    bReturn = this->Open(eStorageIO_Mode::WRITE);
+    if(bReturn != true) {
+        return false;
+    }
+
+    /* Lock On Volume */
+    bResult = DeviceIoControl(this->m_hStorage, FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
     if(bResult  == 0) {
         bReturn = false;
         goto CLENA_UP;
     }
 
+    /* Unmount Volume */
+    bResult = DeviceIoControl(this->m_hStorage, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
+    if(bResult  == 0) {
+        bReturn = false;
+        goto CLENA_UP;
+    }
+
+    Distance.QuadPart = (LONGLONG)SectorBase * Get_BytePerSector();
+    SetFilePointerEx(this->m_hStorage, Distance, &NewDistance, FILE_BEGIN);
+    if(Distance.QuadPart != NewDistance.QuadPart) {
+        bReturn = false;
+        goto CLENA_UP;
+    }
+    
+    pBuff = new BYTE[cbSector * this->Get_BytePerSector()];
+    ZeroMemory(pBuff, cbSector * this->Get_BytePerSector());
+
+    RemainSector = cbSector;
+    lpPos = pBuff;
+    do {
+        TransferUnit = (RemainSector > 1024) ? 1024 : 1;
+        bResult = WriteFile(this->m_hStorage, lpPos, TransferUnit * m_StorageInfo.BytePerSector, &Junk, NULL);
+        if(bResult != TRUE) {
+            bReturn = false;
+            goto CLENA_UP;
+        }
+
+        lpPos += TransferUnit * m_StorageInfo.BytePerSector;
+        RemainSector -= TransferUnit;
+
+        if(Proc != nullptr) {
+            Proc(cbSector, RemainSector, lpParam);
+        }
+    } while(RemainSector != 0);
+
+
     bReturn = true;
 
 CLENA_UP:
-    SAFE_CLOSE(m_hStorage)
+    /* Unlock On Volume */
+    DeviceIoControl(this->m_hStorage, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &Junk, NULL);
+    SAFE_DELETE_ARRAY(pBuff);
+    SAFE_CLOSE(m_hStorage);
 
-    return bReturn;
+    return bReturn;    
 }
+
 
 DWORD CRawStorage::Verify(LPBYTE pDest, LPBYTE pSrc, DWORD cbSector, ProgressCallback Proc, LPVOID lpParam) {
     int nResult;
